@@ -16,7 +16,7 @@ function main() {
         const pinecone = new pinecone_1.PineconeClient();
         yield pinecone.init({
             environment: "us-east-1-aws",
-            apiKey: "83d5fc94-5fd6-4d8a-ba7e-f7187ae79846",
+            apiKey: "",
         });
         yield pinecone.createIndex({
             createRequest: {
