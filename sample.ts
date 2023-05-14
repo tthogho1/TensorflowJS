@@ -5,7 +5,7 @@ async function main() {
     const pinecone = new PineconeClient();
     await pinecone.init({
         environment: "us-east-1-aws",
-        apiKey: "83d5fc94-5fd6-4d8a-ba7e-f7187ae79846",
+        apiKey: "api",
     })
 
     await pinecone.createIndex({
