@@ -3,7 +3,7 @@ import * as tf from '@tensorflow/tfjs-node';
 import fetch from "node-fetch";
 
 const folderPath = "C:/temp/images";
-const pineconeUrl = "https://imageindex-c5a7176.svc.us-east-1-aws.pinecone.io/vectors/upsert";
+const pineconeUrl = "https://imageindex-c5a7176.svc.us-east-1-aws.pinecone.io/query";
 const apiKey = "83d5fc94-5fd6-4d8a-ba7e-f7187ae79846";
 
 async function getVector(model,file) {
@@ -15,62 +15,42 @@ async function getVector(model,file) {
 
     const features =  model.predict(image);
 
+    // Get the: feature vector as a flat array
     const float32array = features.dataSync();
     const featureVector = Array.from(float32array.slice(0));
 
     return featureVector;
 }
 
-function createVector(file,featureVector){
-    const vector = {};
-    
-    vector.id = file;
-    vector.values = featureVector;
-    return vector;
-}
-
-async function upsertVector(vectorlist){
+async function queryVector(featureVector){
     const res = await fetch(pineconeUrl,{
         method:'POST',
         headers : {
           'Content-Type': 'application/json',
           'Api-Key': apiKey
         },
-        body : JSON.stringify({
-          vectors: vectorlist,
-          namespace: 'imageindex'
-        })
+        body: JSON.stringify({
+    		vector: featureVector,
+    		topK: 5,
+    		includeMetadata: false,
+    		includeValues: false,
+    		namespace: 'imageindex'
+  		})
       });
+
+    const json = await res.json();
+    return json;
 }
 
 async function main() {
-
     const model = await tf.loadGraphModel("https://tfhub.dev/google/tfjs-model/imagenet/mobilenet_v2_100_96/feature_vector/2/default/1", { fromTFHub: true });
     console.log('load model');
 
-    let vectorlist = [];
-    const filelist = fs.readdirSync(folderPath);
-    for ( const file of filelist) {
-        console.log(file);
+    const file = "1011516521.jpg";
+    const featureVector = await getVector(model,file);
 
-        const featureVector = await getVector(model,file);
-        vectorlist.push(createVector(file,featureVector));
-
-        if (vectorlist.length == 100){
-            try {
-                await upsertVector(vectorlist);
-            }catch (e){
-                console.log(e);
-            }finally {
-                vectorlist = [];
-            }
-        }
-    };
-    
-    // last batch
-    if (vectorlist.length > 0){
-        await upsertVector(vectorlist);
-    }
+    const res = await queryVector(featureVector);
+    console.log(res);
 }
 
 main();
