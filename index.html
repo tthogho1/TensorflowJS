@@ -1,0 +1,43 @@
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+<script>
+async function check(){
+
+	const model = await tf.loadGraphModel("https://tfhub.dev/google/tfjs-model/imagenet/mobilenet_v2_100_96/feature_vector/2/default/1",{ fromTFHub: true });
+	const img = document.getElementById('myImage');
+	const tensor = tf.browser.fromPixels(img).resizeBilinear([96, 96]).expandDims(0).toFloat().div(tf.scalar(127)).sub(tf.scalar(1));
+	const features = await model.predict(tensor);
+
+    const float32array = features.dataSync();
+    const featureVector = Array.from(float32array.slice(0));
+
+	fetch('http://localhost/query', {
+  		method: 'POST',
+  		headers: {
+    		'Content-Type': 'application/json',
+    		'Api-Key': '83d5fc94-5fd6-4d8a-ba7e-f7187ae79846'
+  		},
+  		body: JSON.stringify({
+    			vector: featureVector,
+    			topK: 5,
+    			includeMetadata: false,
+    			includeValues: false,
+    			namespace: 'imageindex'
+  		})
+	}).then(response => response.json()
+	).then(data =>{
+  		console.log(data);
+	}).catch(error => {
+		console.log(error);
+	});
+}
+
+</script>
+</head>
+<body>
+<button type="button" onclick="check()">check</button>
+<img id="myImage" src="1011516521.jpg"></img>
+</body>
+</html>
+
